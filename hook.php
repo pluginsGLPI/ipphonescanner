@@ -32,6 +32,20 @@
  * @return boolean
  */
 function plugin_ipphonescanner_install() {
+   $migration = new Migration(PLUGIN_IPPHONESCANNER_VERSION);
+   $classes = ['PluginIpPhoneScannerScanner', 'PluginIpPhoneScannerProcess', 'PluginIpPhoneScannerInventoryNumber'];
+
+   foreach ($classes as $class) {
+      if ($plug = isPluginItemType($class)) {
+         $plugname = strtolower($plug['plugin']);
+         $dir      = GLPI_ROOT . "/plugins/$plugname/inc/";
+         $item     = strtolower($plug['class']);
+         if (file_exists("$dir$item.class.php")) {
+            include_once ("$dir$item.class.php");
+            call_user_func([$class, 'install'], $migration);
+         }
+      }
+   }
    return true;
 }
 
@@ -41,5 +55,11 @@ function plugin_ipphonescanner_install() {
  * @return boolean
  */
 function plugin_ipphonescanner_uninstall() {
+   $migration = new Migration(PLUGIN_IPPHONESCANNER_VERSION);
+   $classes = ['PluginIpPhoneScannerScanner', 'PluginIpPhoneScannerProcess', 'PluginIpPhoneScannerInventoryNumber'];
+   foreach ($classes as $class) {
+      call_user_func([$class,'uninstall'], $migration);
+   }
+
    return true;
 }
