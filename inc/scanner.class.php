@@ -35,7 +35,7 @@ if (!defined('GLPI_ROOT')) {
 * @since 1.0
 */
 
-class PluginIpPhoneScannerScanner {
+class PluginIpphonescannerScanner {
     private $stack            = false;
     private $poolMaxSize      = false;
     private $poolCur          = false;

@@ -34,7 +34,17 @@ if (!defined('GLPI_ROOT')) {
 * Class to manage the ip range scan and synchronize phones
 * @since 1.0
 */
-class PluginIpPhoneScannerProcess {
+class PluginIpphonescannerProcess {
+
+   /**
+    * Display name of itemtype
+    *
+    * @return value name of this itemtype
+    **/
+   public static function getTypeName($nb = 0) {
+
+      return __("IP Phone Scan", "ipphonescanner");
+   }
 
   /**
    * Cron task to synchro Rudec infos
@@ -42,14 +52,25 @@ class PluginIpPhoneScannerProcess {
    * @since 1.0
    * @param CronTask $task the crontask object
    */
-   public static function cronIPPhoneScanning($task) {
+   public static function croniPPhoneScanning($task) {
       global $DB;
 
-      $scanner = new PluginIpPhoneScannerScanner();
+      $scanner = new PluginIpphonescannerScanner();
       $scanner->addNetwork('192.168.47.0/24');
       $scanner->addNetwork('172.20.0.0/16');
       $scanner->feedThePool();
+
+      return true;
    }
+
+   static function cronInfo($name) {
+
+       switch ($name) {
+          case 'iPPhoneScanning' :
+             return ['description' => __('IP Phones Scanning', 'PluginIpphonescanner')];
+       }
+       return array();
+    }
 
    /**
    * Install process
@@ -58,7 +79,7 @@ class PluginIpPhoneScannerProcess {
    * @param Migration $migration the migration object
    */
    public static function install(Migration $migration) {
-      Crontask::Register(__CLASS__, 'IPPhoneScanning', DAY_TIMESTAMP,
+      Crontask::Register(__CLASS__, 'iPPhoneScanning', DAY_TIMESTAMP,
                          ['param' => 24,
                           'mode'  => CronTask::MODE_EXTERNAL]);
    }

@@ -35,7 +35,7 @@ if (!defined('GLPI_ROOT')) {
 * @since 1.0
 */
 
-class PluginIpPhoneScannerInventoryNumber {
+class PluginIpphonescannerInventoryNumber {
     private $bySerial           = false;
     private $byMAC              = false;
 
