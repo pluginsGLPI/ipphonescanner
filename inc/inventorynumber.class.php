@@ -43,7 +43,7 @@ class PluginIpPhoneScannerInventoryNumber {
       $this->bySerial = array();
       $this->byMAC    = array();
 
-      $file = fopen("mapping.csv","r");
+      $file = fopen("../data/mapping.csv","r");
 
       while (($data = fgetcsv($file)) !== FALSE) {
         $this->bySerial[$data[1]] = $data[0];
