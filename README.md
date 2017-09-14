@@ -1,6 +1,6 @@
 # IpPhoneScanner GLPI plugin
 
-Add your plugin description here.
+This plugin aims to scan provided IP Adresses or IP Ranges to collect information about Cisco IP Phones.
 
 ## Contributing
 
