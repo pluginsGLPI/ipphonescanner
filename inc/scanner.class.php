@@ -133,7 +133,7 @@ class PluginIpphonescannerScanner {
    * @since 1.0
    * @param string $network ip network
    */
-    protected function addNetwork($network) {
+    public function addNetwork($network) {
       foreach ($this->ipListFromRange($network) as $host) {
         $this->addHost($host);
       }
@@ -144,25 +144,37 @@ class PluginIpphonescannerScanner {
    *
    * @since 1.0
    */
-    protected function feedThePool() {
+    public function feedThePool() {
+
+      echo 'Taille de la pile : '.count($this->stack).' | Position actuelle : '.$this->poolCur;
 
       while (count($this->stack) > 0 AND ($this->poolCur < $this->poolMaxSize)) {
         $host = array_pop($this->stack);
 
-        $url  = "http://$host/DeviceInformationX";
-        $res = $this->client->request('GET', $url);
-        while ($res->getStatusCode() == '200') {
-          $this->showInfo($res->getBody(), $host);
+        try {
+          $url = "http://$host/DeviceInformationX";
+          $res = $this->client->request('GET', $url, ['connect_timeout' => 3.14]);
+          while ($res->getStatusCode() == '200') {
+            $this->showInfo($res->getBody(), $host);
+          }
+        } catch (Guzzle\Http\Exception\BadResponseException $e) {
+            $this->poolCur -= 1;
         }
 
-        $url  = "http://$host/CGI/Java/Serviceability?adapterX=device.statistics.device";
-        $res = $this->client->request('GET', $url);
-        while ($res->getStatusCode() == '200') {
-          $this->showInfo($res->getBody(), $host);
+        try {
+          $url = "http://$host/CGI/Java/Serviceability?adapterX=device.statistics.device";
+          $res = $this->client->request('GET', $url, ['connect_timeout' => 3.14]);
+          while ($res->getStatusCode() == '200') {
+            $this->showInfo($res->getBody(), $host);
+          }
+        } catch (Guzzle\Http\Exception\BadResponseException $e) {
+            $this->poolCur -= 1;
         }
 
         $this->poolCur += 2;
       }
+
+      if (count($this->stack == 0)) return true;
     }
 
    /**
