@@ -136,7 +136,9 @@ class PluginIpphonescannerScanner {
    * @param string $network ip network
    */
     public function addNetwork($network, $ports = array()) {
-      $hosts = Nmap::create()->scan($network, $ports);
+      $nmap = new Nmap::create();
+      $nmap->setTimeout(3000);
+      $hosts = $nmap->scan($network, $ports);
 
       foreach ($hosts as $host) {
         if ($host->GetState() == 'up') {
