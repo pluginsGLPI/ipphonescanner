@@ -57,7 +57,7 @@ class PluginIpphonescannerProcess {
 
       $scanner = new PluginIpphonescannerScanner(255, new PluginIpphonescannerInventoryNumber());
       $scanner->addNetwork('192.168.47.0/24');
-      $scanner->addNetwork('172.20.0.0/16');
+      //$scanner->addNetwork('172.20.0.0/16');
       $scanner->feedThePool();
 
       return true;

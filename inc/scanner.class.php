@@ -30,6 +30,8 @@ if (!defined('GLPI_ROOT')) {
    die("Sorry. You can't access directly to this file");
 }
 
+use Nmap\Nmap;
+
 /**
 * Scanner class
 * @since 1.0
@@ -106,7 +108,7 @@ class PluginIpphonescannerScanner {
    * @since 1.0
    * @param string $host to add in pool
    */
-    protected function addHost($host) {
+    public function addHost($host) {
       $this->stack[] = $host;
     }
 
@@ -133,9 +135,13 @@ class PluginIpphonescannerScanner {
    * @since 1.0
    * @param string $network ip network
    */
-    public function addNetwork($network) {
-      foreach ($this->ipListFromRange($network) as $host) {
-        $this->addHost($host);
+    public function addNetwork($network, $ports = array()) {
+      $hosts = Nmap::create()->scan($network, $ports);
+
+      foreach ($hosts as $host) {
+        if ($host->GetState() == 'up') {
+         $this->addHost(array_pop($host->getIpv4Addresses())->getAddress());
+        } 
       }
     }
 
@@ -146,29 +152,39 @@ class PluginIpphonescannerScanner {
    */
     public function feedThePool() {
 
-      echo 'Taille de la pile : '.count($this->stack).' | Position actuelle : '.$this->poolCur;
+      echo 'Taille de la pile : '.count($this->stack).' | Position actuelle : '.$this->poolCur.PHP_EOL;
+
+      echo date('Y-m-d H:i:s');
 
       while (count($this->stack) > 0 AND ($this->poolCur < $this->poolMaxSize)) {
         $host = array_pop($this->stack);
 
         try {
           $url = "http://$host/DeviceInformationX";
-          $res = $this->client->request('GET', $url, ['connect_timeout' => 3.14]);
+          $res = $this->client->request('GET', $url, ['connect_timeout' => 1]);
           while ($res->getStatusCode() == '200') {
             $this->showInfo($res->getBody(), $host);
-          }
-        } catch (Guzzle\Http\Exception\BadResponseException $e) {
-            $this->poolCur -= 1;
-        }
 
-        try {
-          $url = "http://$host/CGI/Java/Serviceability?adapterX=device.statistics.device";
-          $res = $this->client->request('GET', $url, ['connect_timeout' => 3.14]);
-          while ($res->getStatusCode() == '200') {
-            $this->showInfo($res->getBody(), $host);
+            try {
+              $url = "http://$host/CGI/Java/Serviceability?adapterX=device.statistics.device";
+              $res = $this->client->request('GET', $url, ['connect_timeout' => 1]);
+              while ($res->getStatusCode() == '200') {
+                $this->showInfo($res->getBody(), $host);
+              }
+            } catch (GuzzleHttp\Exception\ConnectException $e) {
+               $this->poolCur = $this->poolCur - 1;
+            } catch (GuzzleHttp\Exception\ClientException $e) {
+               $this->poolCur = $this->poolCur - 1;
+            } catch (GuzzleHttp\Exception\RequestException $e) {
+               $this->poolCur = $this->poolCur - 1;
+            }
           }
-        } catch (Guzzle\Http\Exception\BadResponseException $e) {
-            $this->poolCur -= 1;
+        } catch (GuzzleHttp\Exception\ConnectException $e) {
+            $this->poolCur = $this->poolCur - 1;
+        } catch (GuzzleHttp\Exception\ClientException $e) {
+            $this->poolCur = $this->poolCur - 1;
+        } catch (GuzzleHttp\Exception\RequestException $e) {
+            $this->poolCur = $this->poolCur - 1;
         }
 
         $this->poolCur += 2;
@@ -188,6 +204,7 @@ class PluginIpphonescannerScanner {
       global $DB;
 
       $table  = getTableForItemType('Phone');
+      $phone  = new Phone();
       $params = Toolbox::addslashes_deep($params);
       $query  = "SELECT `id`
                  FROM `glpi_phones`
@@ -197,9 +214,9 @@ class PluginIpphonescannerScanner {
       $result = $DB->query($query);
       if ($DB->numrows($result)) {
          $params['id'] = $DB->result($result, 0, 'id');
-         $phone = $this->update($params);
+         $phone = $phone->update($params);
       } else {
-         $phone = $this->add($params);
+         $phone = $phone->add($params);
       }
 
       return $phone;

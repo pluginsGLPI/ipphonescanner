@@ -53,11 +53,11 @@ class PluginIpphonescannerInventoryNumber {
       fclose($file);
     }
 
-    protected function byMac($iKey = 0){
+    public function byMac($iKey = 0){
         return (isset($this->byMac[$iKey])) ? $this->byMAC[$iKey] : '';
     }
 
-    protected function bySerial($iKey = 0){
+    public function bySerial($iKey = 0){
         return (isset($this->bySerial[$iKey])) ? $this->bySerial[$iKey] : '';
     }
 }
