@@ -6,6 +6,6 @@
     },
     "require": {
         "guzzlehttp/guzzle": "^6.3",
-        "willdurand/nmap": "^0.5.0"
+        "willdurand/nmap": "dev-master"
     }
 }

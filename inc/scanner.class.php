@@ -55,8 +55,8 @@ class PluginIpphonescannerScanner {
     protected function updateDevice($params = array()) {
       $phone = array();
 
-      $phone['user']         = $params['uid'];
-      $phone['name']         = $params['otherserial'];
+      //$phone['user']         = $params['uid'];
+      //$phone['name']         = $params['otherserial'];
       $phone['users_id']     = $params['users_id'];
       $phone['manufacturer'] = 'Cisco';
       $phone['model']        = $params['phonemodel'];
@@ -69,27 +69,31 @@ class PluginIpphonescannerScanner {
     }
 
     protected function showInfo($sResult, $sHost) {
-      $aDevices = simplexml_load_file($sResult);
+      $device = simplexml_load_string($sResult);
 
-      foreach ($aDevices as $device):
-        $params = array();
-        $params['mac'] = $device->MACAddress;
-        $params['name'] = $device->HostName;
-        $params['phonenumber'] = $device->phoneDN;
-        $params['serial'] = $device->serialNumber;
-        $params['phonemodel'] = $device->modelNumber;
-        $params['description'] = $device->udi;
-        $params['time'] = $device->time;
-        $params['date'] = $device->date;
-      endforeach;
+      $params = array();
+      $params['mac'] = (string) $device->MACAddress;
+      $params['name'] = (string) $device->HostName;
+      $params['phonenumber'] = (string) $device->phoneDN;
+      $params['serial'] = (string) $device->serialNumber;
+      $params['phonemodel'] = (string) $device->modelNumber;
+      $params['description'] = (string) $device->udi;
+      $params['time'] = (string) $device->time;
+      $params['date'] = (string) $device->date;
+      
+      //$aBadNumbers = array(173054800, 173055170, 173055140, 173055015, 173055981, 173055197, 173054994, 173054703, 173054719, 173054863, 173054563, 173055054, 173054680, 173054578, 80006, 173054701, 80007, 80005, 173055580, 173054988, 173056540, 90024, 173054644, 173054582, 173055031, 173054625, 173055247, 173054579, 173055276, 173055122, 173055226, 173054638, 173054809, 90009, 173055285, 90008, 173056384, 173054673, 173054624, 173056263, 173056265, 173054555, 173055019, 173054716, 173055139, 173055024, 173054543, 76005, 173055110, 173054683, 173054606, 173055182, 76020, 173055117, 173055256, 173055248, 173055246, 173055245, 173055242, 173056245, 90032, 173054573, 173055683, 173054670, 90033, 173054924, 173055243, 173054804, 173054866, 173055574, 173055575, 173055483, 72098, 173054527, 173056329, 72025, 173054728, 173055614, 173055512, 173055591, 173055590, 173055478, 173055583, 173055595, 173055586, 173055589, 173055600, 173054611, 173055585, 75009, 173055584, 75042, 173055588, 173055648, 173055587, 173055582, 173055646, 173055651, 173055653, 173055650, 173055658, 173055581, 173055649, 173055647, 173055645, 173054972, 173055654, 173054684, 173055693, 173055594, 173055596, 173055598, 173055295, 173055692, 173055114, 173055578, 173055481, 173055472, 173055485, 173055476, 173055471, 173055474, 173055484, 173055475, 173055482, 173055479, 173055477, 173055480, 173055483, 173054712, 173055473, 173054785);
 
-      $params['otherserial'] = $this->inventorynumbers->byMAC($params['mac']);
+      //if (in_array($device->phoneDN, $aBadNumbers)) {
+        //echo $sHost.PHP_EOL;
+      //}
+      
+      $params['otherserial'] = $this->inventorynumbers->byMAC( (string) $params['mac'] );
       $params['ip'] = $sHost;
 
       $params['users_id'] = $this->findUserByPhoneNumber($params['phonenumber']);
 
       if (!$params['otherserial']) {
-        $params['otherserial'] = $this->inventorynumbers->bySerial($params['serial']);
+        $params['otherserial'] = $this->inventorynumbers->bySerial( (string) $params['serial'] );
       }
 
       if (strlen($params['serial']) < 3) {
@@ -97,9 +101,10 @@ class PluginIpphonescannerScanner {
       }
 
       $this->updateDevice($params);
-      $this->poolCur -= 1;
-      
-      return $this->feedThePool();
+      $this->poolCur = $this->poolCur - 1;
+      $this->feedThePool();
+
+      return true;
     }
 
   /**
@@ -135,14 +140,16 @@ class PluginIpphonescannerScanner {
    * @since 1.0
    * @param string $network ip network
    */
-    public function addNetwork($network, $ports = array()) {
-      $nmap = new Nmap::create();
-      $nmap->setTimeout(3000);
-      $hosts = $nmap->scan($network, $ports);
+    public function addNetwork($network, $ports = array('80')) {
+      //$nmap = new Nmap();
+      
+	$hosts = Nmap::create()->setTimeout(3600)->scan($network, $ports);
 
       foreach ($hosts as $host) {
         if ($host->GetState() == 'up') {
-         $this->addHost(array_pop($host->getIpv4Addresses())->getAddress());
+         $aAdresses = $host->getIpv4Addresses();
+         $currHost = array_pop($aAdresses);
+         $this->addHost($currHost->getAddress());
         } 
       }
     }
@@ -154,12 +161,15 @@ class PluginIpphonescannerScanner {
    */
     public function feedThePool() {
 
-      echo 'Taille de la pile : '.count($this->stack).' | Position actuelle : '.$this->poolCur.PHP_EOL;
+      echo 'Taille de la pile : '.count($this->stack).' | Position actuelle : '.$this->poolCur.'<br/>';
 
-      echo date('Y-m-d H:i:s');
+      echo date('Y-m-d H:i:s').'<br/>';
 
-      while (count($this->stack) > 0 AND ($this->poolCur < $this->poolMaxSize)) {
+      while (count($this->stack) > 0) {
         $host = array_pop($this->stack);
+        $bError = false;
+
+        echo 'Trying to update '.$host.'<br/>';
 
         try {
           $url = "http://$host/DeviceInformationX";
@@ -174,25 +184,33 @@ class PluginIpphonescannerScanner {
                 $this->showInfo($res->getBody(), $host);
               }
             } catch (GuzzleHttp\Exception\ConnectException $e) {
-               $this->poolCur = $this->poolCur - 1;
+               $bError = true;
             } catch (GuzzleHttp\Exception\ClientException $e) {
-               $this->poolCur = $this->poolCur - 1;
+               $bError = true;
             } catch (GuzzleHttp\Exception\RequestException $e) {
-               $this->poolCur = $this->poolCur - 1;
+               $bError = true;
             }
           }
         } catch (GuzzleHttp\Exception\ConnectException $e) {
-            $this->poolCur = $this->poolCur - 1;
+            $bError = true;
         } catch (GuzzleHttp\Exception\ClientException $e) {
-            $this->poolCur = $this->poolCur - 1;
+            $bError = true;
         } catch (GuzzleHttp\Exception\RequestException $e) {
-            $this->poolCur = $this->poolCur - 1;
+            $bError = true;
         }
 
-        $this->poolCur += 2;
+        $this->poolCur = $this->poolCur + 2;
+
+        if ($bError) {
+          $this->poolCur = $this->poolCur - 1;
+          echo 'Error while trying to update '.$host.'. New position : '.$this->poolCur.'<br/>';
+          $this->feedThePool();
+        }
       }
 
-      if (count($this->stack == 0)) return true;
+      exit;
+
+      if (count($this->stack) == 0 || $this->poolCur < 0) return true;
     }
 
    /**
@@ -211,10 +229,13 @@ class PluginIpphonescannerScanner {
       $query  = "SELECT `id`
                  FROM `glpi_phones`
                  WHERE
-                    `name`= '".$params['name']."'";
+                    `serial`= '".$params['serial']."'";
 
       $result = $DB->query($query);
-      if ($DB->numrows($result)) {
+
+      echo 'Nombre de ligne '.$DB->numrows($result);
+
+      if ($DB->numrows($result) > 0) {
          $params['id'] = $DB->result($result, 0, 'id');
          $phone = $phone->update($params);
       } else {

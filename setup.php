@@ -37,7 +37,7 @@ define('PLUGIN_IPPHONESCANNER_VERSION', '0.0.1');
 function plugin_init_ipphonescanner() {
    global $PLUGIN_HOOKS;
    require_once(__DIR__ . '/vendor/autoload.php');
-   
+   $PLUGIN_HOOKS['menu_toadd']['ipphonescanner']['tools'] = 'PluginIpphonescannerMenu';
    $PLUGIN_HOOKS['csrf_compliant']['ipphonescanner'] = true;
 }
 

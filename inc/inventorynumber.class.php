@@ -36,28 +36,28 @@ if (!defined('GLPI_ROOT')) {
 */
 
 class PluginIpphonescannerInventoryNumber {
-    private $bySerial           = false;
-    private $byMAC              = false;
+    private $bySerialArray           = false;
+    private $byMACArray              = false;
 
     function __construct() {
-      $this->bySerial = array();
-      $this->byMAC    = array();
+      $this->bySerialArray = array();
+      $this->byMACArray    = array();
 
       $file = fopen("../plugins/ipphonescanner/data/mapping.csv","r");
 
       while (($data = fgetcsv($file)) !== FALSE) {
-        $this->bySerial[$data[1]] = $data[0];
-        $this->byMAC[$data[2]]    = $data[0];
+        $this->bySerialArray[$data[1]] = $data[0];
+        $this->byMACArray[$data[2]]    = $data[0];
       }
 
       fclose($file);
     }
 
     public function byMac($iKey = 0){
-        return (isset($this->byMac[$iKey])) ? $this->byMAC[$iKey] : '';
+      return (isset($this->byMACArray[$iKey])) ? $this->byMACArray[$iKey] : '';
     }
 
     public function bySerial($iKey = 0){
-        return (isset($this->bySerial[$iKey])) ? $this->bySerial[$iKey] : '';
+      return (isset($this->bySerialArray[$iKey])) ? $this->bySerialArray[$iKey] : '';
     }
 }
